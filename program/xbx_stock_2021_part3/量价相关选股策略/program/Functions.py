@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from plotly.offline import plot
 from plotly.subplots import make_subplots
-from Config import *
+from program.Config import *
 
 pd.set_option('expand_frame_repr', False)
 pd.set_option('display.max_rows', 5000)  # 最多显示数据的行数

@@ -2,11 +2,11 @@
 量价相关策略 | 邢不行 | 2021股票量化课程
 微信号：xbx9585
 """
-from program.Config import *
+from Config import *
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from program.Functions import *
+from Functions import *
 
 pd.set_option('expand_frame_repr', False)  # 当列太多时不换行
 pd.set_option('display.max_rows', 5000)  # 最多显示数据的行数
@@ -23,7 +23,7 @@ select_stock_num = 3  # 选股数，当选股数为None时，会等权买入所�
 
 # ===导入数据
 # 导入指数数据
-index_data = import_index_data(root_path + '/data/原始数据/指数数据/sh000300.csv', start=back_test_start, end=back_test_end)
+index_data = import_index_data('/Users/lishechuan/python/coincock/data/指数数据/sh000300.csv', start=back_test_start, end=back_test_end)
 
 # 创造空的事件周期表，用于填充不选股的周期
 empty_df = create_empty_data(index_data, period)
@@ -41,7 +41,7 @@ df = df[df['下日_是否退市'] == False]
 # 选股的方法请写在这里
 factor = '量价相关性'  # 量价相关性
 ascending = True  # True，从小到大    False，从大到小
-df.dropna(subset=[factor], inplace=True)
+df.dropna(subset=[factor], inplace=False)
 df['排名'] = df.groupby('交易日期')[factor].rank(ascending=ascending, method='first')
 df['排名_百分比'] = df.groupby('交易日期')[factor].rank(ascending=ascending, pct=True, method='first')
 # ****************************以上内容可以改动****************************

@@ -15,9 +15,9 @@ import pandas as pd
 
 from Functions import *
 
-pd.set_option('expand_frame_repr', False)
 pd.set_option('display.max_rows', 5000)  # 最多显示数据的行数
 
+pd.set_option('expand_frame_repr', False)
 # ===数据周期
 period_type = 'W'  # W代表周，M代表月
 date_start = '2007-01-01'  # 回测开始时间
@@ -29,7 +29,7 @@ stock_code_list = get_stock_code_list_in_one_dir(path)
 
 # ===循环读取并且合并
 # 导入上证指数，保证指数数据和股票数据在同一天结束，不然会出现问题。
-index_data = import_index_data('sh000001.csv', back_trader_start=date_start, back_trader_end=date_end)
+index_data = import_index_data('/Users/lishechuan/python/coincock/data/指数数据/sh000001.csv', back_trader_start=date_start, back_trader_end=date_end)
 
 
 def calculate_by_stock(code):

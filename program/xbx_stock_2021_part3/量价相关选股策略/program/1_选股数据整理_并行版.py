@@ -3,8 +3,8 @@
 微信号：xbx9585
 """
 import pandas as pd
-from Functions import *
-from Config import *
+from program.Functions import *
+from program.Config import *
 from multiprocessing import Pool, freeze_support, cpu_count
 from datetime import datetime
 import platform
@@ -19,7 +19,7 @@ stock_code_list = get_stock_code_list_in_one_dir(stock_data_path)
 print('股票数量：', len(stock_code_list))
 
 # 导入指数数据
-index_data = import_index_data('/Users/lishechuan/python/coincock/data/指数数据/sh000300.csv', start=back_test_start, end=back_test_end)
+index_data = import_index_data(root_path + '/data/原始数据/指数数据/sh000300.csv', start=back_test_start, end=back_test_end)
 
 
 # ===循环读取并且合并
@@ -60,6 +60,7 @@ def calculate_by_stock(code):
     df = cal_zdt_price(df)
 
     # ==== 计算因子
+
     df['量价相关性'] = df['收盘价_复权'].rolling(10).corr(df['换手率'])
     extra_agg_dict['量价相关性'] = 'last'
 
@@ -129,5 +130,4 @@ if __name__ == '__main__':
     all_stock_data.reset_index(inplace=True, drop=True)
 
     # 将数据存储到pickle文件
-    all_stock_data.to_pickle('/Users/lishechuan/python/coincock/program/量价相关选股策略/data/数据整理/all_stock_data_' + period + '.pkl')
-
+    all_stock_data.to_pickle(root_path + '/data/数据整理/all_stock_data_' + period + '.pkl')
