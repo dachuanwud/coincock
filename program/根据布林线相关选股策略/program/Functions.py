@@ -14,11 +14,32 @@ from plotly.offline import plot
 from plotly.subplots import make_subplots
 from Config import *
 import operator
+import random
+import talib as ta
 
 pd.set_option('expand_frame_repr', False)
 pd.set_option('display.max_rows', 5000)  # 最多显示数据的行数
 
 
+def cal_sma(df, period1, period2, period3):
+    strsma1 = 'SMA' + str(period1)
+    strsma2 = 'SMA' + str(period2)
+    strsma3 = 'SMA' + str(period3)
+    df[strsma1] = ta.SMA(df['收盘价_复权'], timeperiod=period1)
+    df[strsma2] = ta.SMA(df['收盘价_复权'], timeperiod=period2)
+    df[strsma3] = ta.SMA(df['收盘价_复权'], timeperiod=period3)
+    return df
+
+def cal_boll(df, period, nbdevup, nbdevdn):
+    df['upper'], df['middle'], df['lower'] = ta.BBANDS(
+        df['收盘价_复权'].values,
+        timeperiod=period,
+        # number of non-biased standard deviations from the mean
+        nbdevup=nbdevup,
+        nbdevdn=nbdevdn,
+        # Moving average type: simple moving average here
+        matype=0)
+    return df
 # 导入某文件夹下所有股票的代码
 def get_stock_code_list_in_one_dir(path):
     """
