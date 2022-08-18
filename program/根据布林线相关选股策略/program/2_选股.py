@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from Functions import *
+from Signal import *
 
 pd.set_option('expand_frame_repr', False)  # 当列太多时不换行
 pd.set_option('display.max_rows', 5000)  # 最多显示数据的行数
@@ -46,6 +47,7 @@ df = df[df['下日_是否退市'] == False]
 # df['排名_百分比'] = df.groupby('交易日期')[factor].rank(ascending=ascending, pct=True, method='first')
 df['排名'] = df.groupby('交易日期')['总市值'].rank()
 df = df[df['排名'] <= select_stock_num]
+df = boll_buy_sell_Strategy(df)
 df.reset_index(inplace=True, drop=True)
 # print(df.tail(10))
 # exit()
