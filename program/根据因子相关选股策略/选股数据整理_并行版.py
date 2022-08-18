@@ -82,7 +82,7 @@ def calculate_by_stock(code):
 if __name__ == '__main__':
 
     # 测试
-    calculate_by_stock('sz300479')
+    #calculate_by_stock('sz300479')
 
     # 标记开始时间
     start_time = datetime.now()

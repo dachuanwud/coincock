@@ -14,7 +14,7 @@ author：邢不行
 
 """
 import os
-
+import operator
 import requests
 import time
 from datetime import datetime
@@ -96,12 +96,15 @@ get_project()
 df = getStockCodeForEveryday()
 df = df[df['开盘价'] - 0 > 0.00001]
 df.reset_index(drop=True, inplace=True)
+
 print(df)
 
 for i in df.index:
     t = df.iloc[i:i + 1, :]
     stock_code = t.iloc[0]['股票代码']
-
+    if operator.contains(stock_code,'sh68') or operator.contains(stock_code,'sz30') or operator.contains(stock_code, 'bj'):
+        print(stock_code)
+        continue
     # 构建存储文件路径
     path = '/Users/lishechuan/python/coincock/data/stock/' \
            + stock_code + '.csv'

@@ -24,6 +24,10 @@ def get_stock_code_list_in_one_dir(path):
     """
     stock_list = []
 
+#    name = os.path.join(course_name + '.csv')
+#    os.remove(os.path.join(filePath, name))
+
+
     # 系统自带函数os.walk，用于遍历文件夹中的所有文件
     for root, dirs, files in os.walk(path):
         if files:  # 当files不为空的时候

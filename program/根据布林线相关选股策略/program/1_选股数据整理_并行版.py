@@ -62,6 +62,8 @@ def calculate_by_stock(code):
     # ==== 计算因子
     df['量价相关性'] = df['收盘价_复权'].rolling(10).corr(df['换手率'])
     extra_agg_dict['量价相关性'] = 'last'
+    extra_agg_dict['总市值'] = 'last'
+    extra_agg_dict['流通市值'] = 'last'
 
     # ==== 计算因子
 
@@ -129,5 +131,5 @@ if __name__ == '__main__':
     all_stock_data.reset_index(inplace=True, drop=True)
 
     # 将数据存储到pickle文件
-    all_stock_data.to_pickle('/Users/lishechuan/python/coincock/program/量价相关选股策略/data/数据整理/all_stock_data_' + period + '.pkl')
+    all_stock_data.to_pickle('/Users/lishechuan/python/coincock/program/根据布林线相关选股策略/data/数据整理/all_stock_data_' + period + '.pkl')
 
