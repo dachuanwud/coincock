@@ -1,56 +1,48 @@
 """
-笛卡尔选股策略 | 邢不行 | 2021分享会
-微信号：xbx297
+《邢不行-2021新版|Python股票量化投资课程》
+author: 邢不行
+微信: xbx9585
+
+共用数据处理函数
 """
-import pandas as pd
-from decimal import Decimal, ROUND_HALF_UP
-import os
 import itertools
+import os
+from decimal import Decimal, ROUND_HALF_UP
+
 import numpy as np
-from sklearn.linear_model import LinearRegression
-import matplotlib.pyplot as plt
-import plotly.graph_objs as go
-from plotly.offline import plot
-from plotly.subplots import make_subplots
-from Config import *
-import operator
-import random
-import talib as ta
+import pandas as pd
 
 pd.set_option('expand_frame_repr', False)
 pd.set_option('display.max_rows', 5000)  # 最多显示数据的行数
 
 
-def cal_sma(df, period1, period2, period3):
-    strsma1 = 'SMA' + str(period1)
-    strsma2 = 'SMA' + str(period2)
-    strsma3 = 'SMA' + str(period3)
-    df[strsma1] = ta.SMA(df['收盘价_复权'], timeperiod=period1)
-    df[strsma2] = ta.SMA(df['收盘价_复权'], timeperiod=period2)
-    df[strsma3] = ta.SMA(df['收盘价_复权'], timeperiod=period3)
+def cal_fuquan_price(df, fuquan_type='前复权'):
+    """
+    用于计算复权价格
+    :param df: 必须包含的字段：收盘价，前收盘价，开盘价，最高价，最低价
+    :param fuquan_type: ‘前复权’或者‘后复权’
+    :return: 最终输出的df中，新增字段：收盘价_复权，开盘价_复权，最高价_复权，最低价_复权
+    """
+
+    # 计算复权因子
+    df['复权因子'] = (df['收盘价'] / df['前收盘价']).cumprod()
+
+    # 计算前复权、后复权收盘价
+    if fuquan_type == '后复权':
+        df['收盘价_复权'] = df['复权因子'] * (df.iloc[0]['收盘价'] / df.iloc[0]['复权因子'])
+    elif fuquan_type == '前复权':
+        df['收盘价_复权'] = df['复权因子'] * (df.iloc[-1]['收盘价'] / df.iloc[-1]['复权因子'])
+    else:
+        raise ValueError('计算复权价时，出现未知的复权类型：%s' % fuquan_type)
+
+    # 计算复权
+    df['开盘价_复权'] = df['开盘价'] / df['收盘价'] * df['收盘价_复权']
+    df['最高价_复权'] = df['最高价'] / df['收盘价'] * df['收盘价_复权']
+    df['最低价_复权'] = df['最低价'] / df['收盘价'] * df['收盘价_复权']
+    del df['复权因子']
     return df
 
-def cal_shangri_sma(df, period1, period2, period3):
-    strsma1 = 'shang_SMA' + str(period1)
-    strsma2 = 'shang_SMA' + str(period2)
-    strsma3 = 'shang_SMA' + str(period3)
-    df[strsma1] = df['SMA5'].shift(1)
-    df[strsma2] = df['SMA10'].shift(1)
-    df[strsma3] = df['SMA20'].shift(1)
-    # print(df[['交易日期','SMA5','shang_SMA5']])
-    # exit()
-    return df
 
-def cal_boll(df, period, nbdevup, nbdevdn):
-    df['upper'], df['middle'], df['lower'] = ta.BBANDS(
-        df['收盘价_复权'].values,
-        timeperiod=period,
-        # number of non-biased standard deviations from the mean
-        nbdevup=nbdevup,
-        nbdevdn=nbdevdn,
-        # Moving average type: simple moving average here
-        matype=0)
-    return df
 # 导入某文件夹下所有股票的代码
 def get_stock_code_list_in_one_dir(path):
     """
@@ -71,56 +63,30 @@ def get_stock_code_list_in_one_dir(path):
 
 
 # 导入指数
-def import_index_data(path, start=None, end=None):
+def import_index_data(path, back_trader_start=None, back_trader_end=None):
     """
-    从指定位置读入指数数据。指数数据来自于：program/构建自己的股票数据库/案例_获取股票最近日K线数据.py
-    :param end: 结束时间
-    :param start: 开始时间
+    从指定位置读入指数数据。指数数据来自于：program_back/构建自己的股票数据库/案例_获取股票最近日K线数据.py
+    :param back_trader_end: 回测结束时间
+    :param back_trader_start: 回测开始时间
     :param path:
     :return:
     """
     # 导入指数数据
-    df_index = pd.read_csv(path, parse_dates=['candle_end_time'])
+    df_index = pd.read_csv(path, parse_dates=['candle_end_time'], encoding='gbk')
     df_index['指数涨跌幅'] = df_index['close'].pct_change()
     df_index = df_index[['candle_end_time', '指数涨跌幅']]
     df_index.dropna(subset=['指数涨跌幅'], inplace=True)
-
     df_index.rename(columns={'candle_end_time': '交易日期'}, inplace=True)
-    if start:
-        df_index = df_index[df_index['交易日期'] >= pd.to_datetime(start)]
-    if end:
-        df_index = df_index[df_index['交易日期'] <= pd.to_datetime(end)]
+
+    if back_trader_start:
+        df_index = df_index[df_index['交易日期'] >= pd.to_datetime(back_trader_start)]
+    if back_trader_end:
+        df_index = df_index[df_index['交易日期'] <= pd.to_datetime(back_trader_end)]
+
     df_index.sort_values(by=['交易日期'], inplace=True)
     df_index.reset_index(inplace=True, drop=True)
 
     return df_index
-
-
-def create_empty_data(index_data, period):
-    empty_df = index_data[['交易日期']].copy()
-    empty_df['涨跌幅'] = 0.0
-    empty_df['周期最后交易日'] = empty_df['交易日期']
-    empty_df.set_index('交易日期', inplace=True)
-    agg_dict = {'周期最后交易日': 'last'}
-    empty_period_df = empty_df.resample(rule=period).agg(agg_dict)
-
-    empty_period_df['每天涨跌幅'] = empty_df['涨跌幅'].resample(period).apply(lambda x: list(x))
-    # 删除没交易的日期
-    empty_period_df.dropna(subset=['周期最后交易日'], inplace=True)
-
-    empty_period_df['选股下周期每天涨跌幅'] = empty_period_df['每天涨跌幅'].shift(-1)
-    empty_period_df.dropna(subset=['选股下周期每天涨跌幅'], inplace=True)
-
-    # 填仓其他列
-    empty_period_df['股票数量'] = 0
-    empty_period_df['买入股票代码'] = 'empty'
-    empty_period_df['买入股票名称'] = 'empty'
-    empty_period_df['选股下周期涨跌幅'] = 0.0
-    empty_period_df.rename(columns={'周期最后交易日': '交易日期'}, inplace=True)
-    empty_period_df.set_index('交易日期', inplace=True)
-
-    empty_period_df = empty_period_df[['股票数量', '买入股票代码', '买入股票名称', '选股下周期涨跌幅', '选股下周期每天涨跌幅']]
-    return empty_period_df
 
 
 # 将股票数据和指数数据合并
@@ -149,8 +115,16 @@ def merge_with_index_data(df, index_data, extra_fill_0_list=[]):
     fill_0_list = ['成交量', '成交额', '涨跌幅', '开盘买入涨跌幅'] + extra_fill_0_list
     df.loc[:, fill_0_list] = df[fill_0_list].fillna(value=0)
 
-    # ===用前一天的数据，补全其余空值
-    df.fillna(method='ffill', inplace=True)
+    # ===除了成分股、行业分类之外的字段，用前一天的数据，补全其余空值
+    ffill_columns = df.columns.tolist()
+    c_columns = [
+        '沪深300成分股', '上证50成分股', '中证500成分股',
+        '申万一级行业代码', '申万一级行业名称', '申万二级行业代码', '申万二级行业名称',
+        '申万三级行业代码', '申万三级行业名称'
+    ]
+    for c_column in c_columns:
+        ffill_columns.remove(c_column)
+    df.loc[:, ffill_columns] = df[ffill_columns].fillna(method='ffill')
 
     # ===去除上市之前的数据
     df = df[df['股票代码'].notnull()]
@@ -228,15 +202,15 @@ def cal_zdt_price(df):
     计算股票当天的涨跌停价格。在计算涨跌停价格的时候，按照严格的四舍五入。
     包含st股，但是不包含新股
     涨跌停制度规则:
-        ---2020年8月3日
+        ---2020年8月23日
         非ST股票 10%
         ST股票 5%
 
-        ---2020年8月4日至今
+        ---2020年8月24日至今
         普通非ST股票 10%
         普通ST股票 5%
 
-        科创板（sh68） 20%
+        科创板（sh68） 20%（一直是20%，不受时间限制）
         创业板（sz30） 20%
         科创板和创业板即使ST，涨跌幅限制也是20%
 
@@ -253,17 +227,17 @@ def cal_zdt_price(df):
     df.loc[cond, '涨停价'] = df['前收盘价'] * 1.05
     df.loc[cond, '跌停价'] = df['前收盘价'] * 0.95
 
-    # 2020年8月3日之后涨跌停规则有所改变
-    # 新规的科创板
-    new_rule_kcb = (df['交易日期'] > pd.to_datetime('2020-08-03')) & df['股票代码'].str.contains('sh68')
+    # 科创板 20%
+    rule_kcb = df['股票代码'].str.contains('sh68')
+    # 2020年8月23日之后涨跌停规则有所改变
     # 新规的创业板
-    new_rule_cyb = (df['交易日期'] > pd.to_datetime('2020-08-03')) & df['股票代码'].str.contains('sz30')
+    new_rule_cyb = (df['交易日期'] > pd.to_datetime('2020-08-23')) & df['股票代码'].str.contains('sz30')
     # 北交所条件
     cond_bj = df['股票代码'].str.contains('bj')
 
     # 科创板 & 创业板
-    df.loc[new_rule_kcb | new_rule_cyb, '涨停价'] = df['前收盘价'] * 1.2
-    df.loc[new_rule_kcb | new_rule_cyb, '跌停价'] = df['前收盘价'] * 0.8
+    df.loc[rule_kcb | new_rule_cyb, '涨停价'] = df['前收盘价'] * 1.2
+    df.loc[rule_kcb | new_rule_cyb, '跌停价'] = df['前收盘价'] * 0.8
 
     # 北交所
     df.loc[cond_bj, '涨停价'] = df['前收盘价'] * 1.3
@@ -350,137 +324,28 @@ def strategy_evaluate(equity, select_stock):
     return results.T, year_return, monthly_return
 
 
-# 绘制策略曲线
-def draw_equity_curve_mat(df, data_dict, date_col=None, right_axis=None, pic_size=[16, 9], font_size=25,
-                          log=False, chg=False, title=None, y_label='净值'):
-    """
-    绘制策略曲线
-    :param df: 包含净值数据的df
-    :param data_dict: 要展示的数据字典格式：｛图片上显示的名字:df中的列名｝
-    :param date_col: 时间列的名字，如果为None将用索引作为时间列
-    :param right_axis: 右轴数据 ｛图片上显示的名字:df中的列名｝
-    :param pic_size: 图片的尺寸
-    :param font_size: 字体大小
-    :param chg: datadict中的数据是否为涨跌幅，True表示涨跌幅，False表示净值
-    :param log: 是都要算对数收益率
-    :param title: 标题
-    :param y_label: Y轴的标签
-    :return:
-    """
-    # 复制数据
-    draw_df = df.copy()
-    # 模块基础设置
-    plt.rcParams['font.sans-serif'] = ['SimHei', 'Arial Unicode MS']  # 定义使用的字体，是个数组。
-    plt.rcParams['axes.unicode_minus'] = False
-    # plt.style.use('dark_background')
+def create_empty_data(index_data, period):
+    empty_df = index_data[['交易日期']].copy()
+    empty_df['涨跌幅'] = 0.0
+    empty_df['周期最后交易日'] = empty_df['交易日期']
+    empty_df.set_index('交易日期', inplace=True)
+    agg_dict = {'周期最后交易日': 'last'}
+    empty_period_df = empty_df.resample(rule=period).agg(agg_dict)
 
-    plt.figure(figsize=(pic_size[0], pic_size[1]))
-    # 获取时间轴
-    if date_col:
-        time_data = draw_df[date_col]
-    else:
-        time_data = draw_df.index
-    # 绘制左轴数据
-    for key in data_dict:
-        if chg:
-            draw_df[data_dict[key]] = (draw_df[data_dict[key]] + 1).fillna(1).cumprod()
-        if log:
-            draw_df[data_dict[key]] = np.log(draw_df[data_dict[key]].apply(float))
-        plt.plot(time_data, draw_df[data_dict[key]], linewidth=2, label=str(key))
-    # 设置坐标轴信息等
-    plt.ylabel(y_label, fontsize=font_size)
-    plt.legend(loc=2, fontsize=font_size)
-    plt.tick_params(labelsize=font_size)
-    plt.grid()
-    if title:
-        plt.title(title, fontsize=font_size)
+    empty_period_df['每天涨跌幅'] = empty_df['涨跌幅'].resample(period).apply(lambda x: list(x))
+    # 删除没交易的日期
+    empty_period_df.dropna(subset=['周期最后交易日'], inplace=True)
 
-    # 绘制右轴数据
-    if right_axis:
-        # 生成右轴
-        ax_r = plt.twinx()
-        # 获取数据
-        key = list(right_axis.keys())[0]
-        ax_r.plot(time_data, draw_df[right_axis[key]], 'y', linewidth=1, label=str(key))
-        # 设置坐标轴信息等
-        ax_r.set_ylabel(key, fontsize=font_size)
-        ax_r.legend(loc=1, fontsize=font_size)
-        ax_r.tick_params(labelsize=font_size)
-    plt.show()
+    empty_period_df['选股下周期每天涨跌幅'] = empty_period_df['每天涨跌幅'].shift(-1)
+    empty_period_df.dropna(subset=['选股下周期每天涨跌幅'], inplace=True)
 
+    # 填仓其他列
+    empty_period_df['股票数量'] = 0
+    empty_period_df['买入股票代码'] = 'empty'
+    empty_period_df['买入股票名称'] = 'empty'
+    empty_period_df['选股下周期涨跌幅'] = 0.0
+    empty_period_df.rename(columns={'周期最后交易日': '交易日期'}, inplace=True)
+    empty_period_df.set_index('交易日期', inplace=True)
 
-def draw_equity_curve_plotly(df, data_dict, date_col=None, right_axis=None, pic_size=[1500, 800], log=False, chg=False,
-                             title=None, path=root_path + '/data/pic.html', show=True):
-    """
-    绘制策略曲线
-    :param df: 包含净值数据的df
-    :param data_dict: 要展示的数据字典格式：｛图片上显示的名字:df中的列名｝
-    :param date_col: 时间列的名字，如果为None将用索引作为时间列
-    :param right_axis: 右轴数据 ｛图片上显示的名字:df中的列名｝
-    :param pic_size: 图片的尺寸
-    :param chg: datadict中的数据是否为涨跌幅，True表示涨跌幅，False表示净值
-    :param log: 是都要算对数收益率
-    :param title: 标题
-    :param path: 图片路径
-    :param show: 是否打开图片
-    :return:
-    """
-    draw_df = df.copy()
-
-    # 设置时间序列
-    if date_col:
-        time_data = draw_df[date_col]
-    else:
-        time_data = draw_df.index
-
-    # 绘制左轴数据
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    for key in data_dict:
-        if chg:
-            draw_df[data_dict[key]] = (draw_df[data_dict[key]] + 1).fillna(1).cumprod()
-        fig.add_trace(go.Scatter(x=time_data, y=draw_df[data_dict[key]], name=key, ))
-
-    # 绘制右轴数据
-    if right_axis:
-        # for key in list(right_axis.keys()):
-        key = list(right_axis.keys())[0]
-        fig.add_trace(go.Scatter(x=time_data, y=draw_df[right_axis[key]], name=key + '(右轴)',
-                                 marker=dict(color='rgba(220, 220, 220, 0.8)'), yaxis='y2'))  # 标明设置一个不同于trace1的一个坐标轴
-    fig.update_layout(template="none", width=pic_size[0], height=pic_size[1], title_text=title, hovermode='x')
-    # 是否转为log坐标系
-    if log:
-        fig.update_layout(yaxis_type="log")
-    plot(figure_or_data=fig, filename=path, auto_open=False)
-
-    # 打开图片的html文件，需要判断系统的类型
-    if show:
-        res = os.system('start ' + path)
-        if res != 0:
-            os.system('open ' + path)
-
-
-# region 中性化相关的函数
-def _factors_linear_regression(data, factor, neutralize_list, industry=None):
-    """
-    使用线性回归对目标因子进行中性化处理，此方法外部不可直接调用。
-    :param data: 股票数据
-    :param factor: 目标因子
-    :param neutralize_list:中性化处理变量list
-    :param industry: 行业字段名称，默认为None
-    :return: 中性化之后的数据
-    """
-    # print(data['交易日期'].to_list()[0])
-    lrm = LinearRegression(fit_intercept=True)  # 创建线性回归模型
-    if industry:  # 如果需要对行业进行中性化，将行业的列名加入到neutralize_list中
-        industry_cols = [col for col in data.columns if '所属行业' in col]
-        for col in industry_cols:
-            if col not in neutralize_list:
-                neutralize_list.append(col)
-    train = data[neutralize_list].copy()  # 输入变量
-    label = data[[factor]].copy()  # 预测变量
-    lrm.fit(train, label)  # 线性拟合
-    predict = lrm.predict(train)  # 输入变量进行预测
-    data[factor + '_中性'] = label.values - predict  # 计算残差
-    return data
-
-# endregion
+    empty_period_df = empty_period_df[['股票数量', '买入股票代码', '买入股票名称', '选股下周期涨跌幅', '选股下周期每天涨跌幅']]
+    return empty_period_df

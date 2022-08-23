@@ -60,6 +60,8 @@ def calculate_by_stock(code):
     df = cal_zdt_price(df)
     df = cal_sma(df, 5, 10, 20)
     df = cal_boll(df, 20, 2, 2)
+    df = cal_shangri_sma(df, 5, 10, 20)
+
     # ==== 计算因子
     df['量价相关性'] = df['收盘价_复权'].rolling(10).corr(df['换手率'])
     extra_agg_dict['量价相关性'] = 'last'
@@ -69,6 +71,9 @@ def calculate_by_stock(code):
     extra_agg_dict['SMA5'] = 'last'
     extra_agg_dict['SMA10'] = 'last'
     extra_agg_dict['SMA20'] = 'last'
+    extra_agg_dict['shang_SMA5'] = 'last'
+    extra_agg_dict['shang_SMA10'] = 'last'
+    extra_agg_dict['shang_SMA20'] = 'last'
     extra_agg_dict['upper'] = 'last'
     extra_agg_dict['middle'] = 'last'
     extra_agg_dict['lower'] = 'last'

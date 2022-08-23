@@ -10,7 +10,28 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="/data/stock/bj430090.csv">
+        <entry key="/data/stock/sh600001.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/data/stock/sh600003.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/data/stock/sh600058.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/data/stock/sh600095.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -31,20 +52,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="/data/stock/sh688336.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="/data/stock/sh688588.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="/data/指数数据/sh000001.csv">
           <value>
             <Attribute>
@@ -59,7 +66,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry />
       </map>
     </option>
   </component>

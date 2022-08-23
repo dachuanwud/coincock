@@ -102,9 +102,8 @@ print(df)
 for i in df.index:
     t = df.iloc[i:i + 1, :]
     stock_code = t.iloc[0]['股票代码']
-    if operator.contains(stock_code,'sh68') or operator.contains(stock_code,'sz30') or operator.contains(stock_code, 'bj'):
-        print(stock_code)
-        continue
+    print(stock_code)
+    continue
     # 构建存储文件路径
     path = '/Users/lishechuan/python/coincock/data/stock/' \
            + stock_code + '.csv'

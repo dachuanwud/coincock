@@ -33,7 +33,7 @@ def _random(n=16):
 
 # ===构建网址
 # 参数
-stock_code = 'sh000300'  # 正常股票sz000001，指数sh000001, ETF sh510500
+stock_code = 'sh000001'  # 正常股票sz000001，指数sh000001, ETF sh510500
 k_type = 'day'  # day, week, month分别对用日线、周线、月线
 num = 30000  # 股票最多不能超过640，指数、etf等没有限制
 
