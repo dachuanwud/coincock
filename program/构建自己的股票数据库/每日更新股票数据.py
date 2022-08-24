@@ -12,9 +12,11 @@ author：邢不行
 本节课讲解如何结合历史数据，每天获取股票的数据，
 构建完整实时股票数据库。
 
+
+
 """
 import os
-import operator
+
 import requests
 import time
 from datetime import datetime
@@ -85,36 +87,31 @@ def getStockCodeForEveryday():
     return df
 
 
-def get_project():
-    print(os.getcwd())                    # 获取当前工作目录路径
-    print (os.path.abspath('.'))           # 获取当前工作目录路径
-    print (os.path.abspath('test.txt'))    # 获取当前目录文件下的工作目录路径
-    print (os.path.abspath('..'))          # 获取当前工作的父目录 ！注意是父目录路径
-    print (os.path.abspath(os.curdir))     # 获取当前工作目录路径
-
-get_project()
 df = getStockCodeForEveryday()
 df = df[df['开盘价'] - 0 > 0.00001]
 df.reset_index(drop=True, inplace=True)
-
 print(df)
 
 for i in df.index:
     t = df.iloc[i:i + 1, :]
     stock_code = t.iloc[0]['股票代码']
-    print(stock_code)
-    continue
+    if 'sh68' in stock_code or 'sz30' in stock_code or 'bj' in stock_code:
+        temp_path = '/Users/lishechuan/python/coincock/data/stock/' \
+            + stock_code + '.csv'
+        # 文件存在，不是新股
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        print('is rm = %s' %stock_code)
+        continue
     # 构建存储文件路径
     path = '/Users/lishechuan/python/coincock/data/stock/' \
            + stock_code + '.csv'
     # 文件存在，不是新股
     if os.path.exists(path):
-        print(path)
         t.to_csv(path, header=None, index=False, mode='a', encoding='gbk')
     # 文件不存在，说明是新股
     else:
         # 先将头文件输出
-        print(path)
-        pd.DataFrame(columns=['数据由李涉川整理']).to_csv(path, index=False, encoding='gbk')
+        pd.DataFrame(columns=['数据由邢不行整理']).to_csv(path, index=False, encoding='gbk')
         t.to_csv(path, index=False, mode='a', encoding='gbk')
     print(stock_code)
